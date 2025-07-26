@@ -143,6 +143,18 @@ app.before_request(load_logged_in_user)
 # HTML templates (Jinja2 strings) — in production you'd use template files
 # -----------------------------------------------------------------------------
 
+#
+# Base HTML template.  Originally this used Jinja2 ``block`` tags to define
+# a ``content`` block that individual pages could override.  However, when
+# using ``render_template_string`` with concatenated template strings, Jinja2
+# interprets the entire string as a single template.  Defining the same
+# block twice (once in the base and once in the page‑specific string)
+# triggers a ``TemplateAssertionError``.  To avoid this, the base template
+# no longer declares any blocks – instead, page HTML is concatenated
+# directly after this template.  All styling and basic document structure
+# remains here.  Page content should be appended after this string without
+# defining additional blocks.
+
 BASE_TEMPLATE = """
 <!doctype html>
 <html lang="en">
@@ -160,10 +172,14 @@ BASE_TEMPLATE = """
     </style>
 </head>
 <body>
-    {% block content %}{% endblock %}
-</body>
-</html>
 """
+
+# Append closing tags separately so that concatenated page strings can
+# insert content in between <body> and </body>.  When using
+# ``render_template_string`` with ``BASE_TEMPLATE + page_html``, the page
+# HTML should include the closing ``</body></html>`` tags.  To avoid
+# duplication, we will supply these closing tags manually when building
+# each page.
 
 
 @app.route("/")
@@ -189,7 +205,7 @@ def home() -> str:
     return render_template_string(
         BASE_TEMPLATE
         + """
-{% block content %}
+  <!-- Page content start -->
   <h1>Mini FB</h1>
 
   {% if g.user %}
@@ -237,7 +253,9 @@ def home() -> str:
       </div>
     </div>
   {% endfor %}
-{% endblock %}
+  <!-- Page content end -->
+  </body>
+  </html>
 """,
         posts=posts,
         comments=comments,
@@ -273,7 +291,7 @@ def register() -> str:
     return render_template_string(
         BASE_TEMPLATE
         + """
-{% block content %}
+  <!-- Page content start -->
   <h1>Register</h1>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <form method="post">
@@ -282,7 +300,9 @@ def register() -> str:
     <button type="submit">Register</button>
   </form>
   <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a>.</p>
-{% endblock %}
+  <!-- Page content end -->
+  </body>
+  </html>
 """,
         error=error,
     )
@@ -310,7 +330,7 @@ def login() -> str:
     return render_template_string(
         BASE_TEMPLATE
         + """
-{% block content %}
+  <!-- Page content start -->
   <h1>Login</h1>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <form method="post">
@@ -319,7 +339,9 @@ def login() -> str:
     <button type="submit">Login</button>
   </form>
   <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a>.</p>
-{% endblock %}
+  <!-- Page content end -->
+  </body>
+  </html>
 """,
         error=error,
     )
