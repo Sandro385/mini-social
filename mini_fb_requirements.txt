@@ -1,0 +1,3 @@
+Flask>=2.2.0
+
+# The database uses SQLite (built into Python), so no extra packages are needed.
